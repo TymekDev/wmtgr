@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -13,12 +14,6 @@ import (
 // TODO: send telegram notification
 
 func main() {
-	var (
-		tokenWebmention string
-		tokenTelegram   string
-		interval        time.Duration
-	)
-
 	app := &cli.App{
 		Name:        "wmtgr",
 		Usage:       "webmentions to telegram relay",
@@ -31,21 +26,37 @@ func main() {
 		},
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:        "token-webmention, wm",
-				Usage:       "webmention.io API token",
-				Required:    true,
-				Destination: &tokenWebmention,
+				Name:     "token-webmention, wm",
+				Usage:    "webmention.io API token",
+				Required: true,
 			},
-			cli.StringFlag{
-				Name:        "token-telegram, tg",
-				Usage:       "Telegram bot API token",
-				Destination: &tokenTelegram,
+		},
+		Commands: []cli.Command{
+			{
+				Name:  "fetch",
+				Usage: "fetch webmentions once, print, and exit",
+				Action: func(c *cli.Context) error {
+					return errors.New("not implemented")
+				},
 			},
-			cli.DurationFlag{
-				Name:        "interval, n",
-				Usage:       "interval between checks",
-				Value:       60 * time.Minute,
-				Destination: &interval,
+			{
+				Name:  "relay",
+				Usage: "fetch webmentions periodically and relay them to Telegram",
+				Action: func(c *cli.Context) error {
+					return errors.New("not implemented")
+				},
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:     "token-telegram, tg",
+						Usage:    "Telegram bot API token",
+						Required: true,
+					},
+					cli.DurationFlag{
+						Name:  "interval, n",
+						Usage: "interval between checks",
+						Value: 60 * time.Minute,
+					},
+				},
 			},
 		},
 	}
