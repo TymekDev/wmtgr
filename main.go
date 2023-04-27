@@ -1,9 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/urfave/cli"
@@ -36,7 +40,16 @@ func main() {
 				Name:  "fetch",
 				Usage: "fetch webmentions once, print, and exit",
 				Action: func(c *cli.Context) error {
-					return errors.New("not implemented")
+					b, err := fetch(c.GlobalString("token-webmention"))
+					if err != nil {
+						return err
+					}
+
+					if _, err := bytes.NewReader(b).WriteTo(os.Stdout); err != nil {
+						return err
+					}
+
+					return nil
 				},
 			},
 			{
@@ -65,4 +78,20 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+}
+
+func fetch(token string) ([]byte, error) {
+	req, err := http.NewRequest(http.MethodGet, "https://webmention.io/api/mentions", strings.NewReader(fmt.Sprintf("token=%s", token)))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	return io.ReadAll(resp.Body)
 }
