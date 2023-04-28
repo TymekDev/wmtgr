@@ -85,8 +85,12 @@ func main() {
 							continue
 						}
 
-						if n := nLast - len(result.Links); n > 0 {
+						if n := len(result.Links) - nLast; n > 0 {
 							log.Println("INFO found", n, "new webmention(s)")
+							if err := sendTelegramMessage(c.String("telegram-token"), c.String("telegram-chat-id"), fmt.Sprintf("Found %d new webmention(s)", n)); err != nil {
+								log.Println("ERROR", err)
+								continue
+							}
 						}
 					}
 
@@ -96,6 +100,11 @@ func main() {
 					cli.StringFlag{
 						Name:     "telegram-token, tg",
 						Usage:    "Telegram bot API token",
+						Required: true,
+					},
+					cli.StringFlag{
+						Name:     "telegram-chat-id, cid",
+						Usage:    "Telegram chat ID",
 						Required: true,
 					},
 					cli.DurationFlag{
@@ -128,4 +137,42 @@ func fetch(token string) ([]byte, error) {
 	defer resp.Body.Close()
 
 	return io.ReadAll(resp.Body)
+}
+
+func sendTelegramMessage(token string, chat_id, message string) error {
+	payload := struct {
+		ChatID  string `json:"chat_id"`
+		Message string `json:"text"`
+	}{
+		ChatID:  chat_id,
+		Message: message,
+	}
+
+	b, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", token), bytes.NewReader(b))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		b, err := io.ReadAll(resp.Body)
+		if err != nil {
+			log.Println("ERROR", err)
+		}
+
+		return fmt.Errorf("failed to send message: %s: %s", resp.Status, string(b))
+	}
+
+	return nil
 }
