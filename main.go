@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 var version string
@@ -24,25 +24,26 @@ func main() {
 		Usage:       "webmentions to telegram relay",
 		Version:     version,
 		Description: "wmtgr periodically checks webmention.io for new webmentions and sends them to Telegram using Telegram bot API.",
-		Authors: []cli.Author{
+		Authors: []*cli.Author{
 			{
 				Name:  "Tymoteusz Makowski",
 				Email: "tymek.makowski@gmail.com",
 			},
 		},
 		Flags: []cli.Flag{
-			cli.StringFlag{
-				Name:     "webmention-token, wm",
+			&cli.StringFlag{
+				Name:     "webmention-token",
+				Aliases:  []string{"wm"},
 				Usage:    "webmention.io API token",
 				Required: true,
 			},
 		},
-		Commands: []cli.Command{
+		Commands: []*cli.Command{
 			{
 				Name:  "fetch",
 				Usage: "fetch webmentions once, print, and exit",
 				Action: func(c *cli.Context) error {
-					b, err := fetch(c.GlobalString("webmention-token"), 0)
+					b, err := fetch(c.String("webmention-token"), 0)
 					if err != nil {
 						return err
 					}
@@ -63,14 +64,14 @@ func main() {
 						return err
 					}
 
-					_, sinceID, err := fetchAndParse(c.GlobalString("webmention-token"), 0)
+					_, sinceID, err := fetchAndParse(c.String("webmention-token"), 0)
 					if err != nil {
 						return err
 					}
 
 					log.Println("INFO starting relay")
 					for range time.Tick(c.Duration("interval")) {
-						sentences, id, err := fetchAndParse(c.GlobalString("webmention-token"), sinceID)
+						sentences, id, err := fetchAndParse(c.String("webmention-token"), sinceID)
 						if err != nil {
 							log.Println("ERROR", err)
 							continue
@@ -91,20 +92,23 @@ func main() {
 					return nil
 				},
 				Flags: []cli.Flag{
-					cli.StringFlag{
-						Name:     "telegram-token, tg",
+					&cli.StringFlag{
+						Name:     "telegram-token",
+						Aliases:  []string{"tg"},
 						Usage:    "Telegram bot API token",
 						Required: true,
 					},
-					cli.StringFlag{
-						Name:     "telegram-chat-id, cid",
+					&cli.StringFlag{
+						Name:     "telegram-chat-id",
+						Aliases:  []string{"cid"},
 						Usage:    "Telegram chat ID",
 						Required: true,
 					},
-					cli.DurationFlag{
-						Name:  "interval, n",
-						Usage: "interval between checks",
-						Value: 60 * time.Minute,
+					&cli.DurationFlag{
+						Name:    "interval",
+						Aliases: []string{"n"},
+						Usage:   "interval between checks",
+						Value:   60 * time.Minute,
 					},
 				},
 			},
