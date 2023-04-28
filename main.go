@@ -55,6 +55,11 @@ func main() {
 				Name:  "relay",
 				Usage: "fetch webmentions periodically and relay them to Telegram",
 				Action: func(c *cli.Context) error {
+					bot, err := NewBot(c.String("telegram-token"), c.String("telegram-chat-id"))
+					if err != nil {
+						return err
+					}
+
 					_, sinceID, err := fetchAndParse(c.GlobalString("webmention-token"), 0)
 					if err != nil {
 						return err
@@ -73,7 +78,7 @@ func main() {
 							log.Println("INFO found", n, "new webmention(s)")
 							const sep = "\n - "
 							message := fmt.Sprintf("Found %d new webmention(s):%s%s", n, sep, strings.Join(sentences, sep))
-							if err := sendTelegramMessage(c.String("telegram-token"), c.String("telegram-chat-id"), message); err != nil {
+							if err := bot.Send(message); err != nil {
 								log.Println("ERROR", err)
 								continue
 							}
@@ -104,7 +109,7 @@ func main() {
 	}
 
 	if err := app.Run(os.Args); err != nil {
-		fmt.Println(err)
+		fmt.Println("ERROR", err)
 		os.Exit(1)
 	}
 }
@@ -160,8 +165,4 @@ func fetch(token string, sinceID int) ([]byte, error) {
 	defer resp.Body.Close()
 
 	return io.ReadAll(resp.Body)
-}
-
-func sendTelegramMessage(token string, chat_id, message string) error {
-	return NewBot(token, chat_id).Send(message)
 }

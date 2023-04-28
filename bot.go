@@ -14,11 +14,37 @@ type Bot struct {
 	chatID string
 }
 
-func NewBot(token, chatID string) *Bot {
-	return &Bot{
+func NewBot(token, chatID string) (*Bot, error) {
+	tg := &Bot{
 		token:  token,
 		chatID: chatID,
 	}
+
+	name, err := tg.Name()
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("INFO authorized as @%s in Telegram bot API\n", name)
+
+	return tg, nil
+}
+
+func (tg *Bot) Name() (string, error) {
+	b, err := tg.do(nil, "getMe")
+	if err != nil {
+		return "", err
+	}
+
+	result := struct {
+		Result struct {
+			Username string `json:"username"`
+		} `json:"result"`
+	}{}
+	if err := json.Unmarshal(b, &result); err != nil {
+		return "", err
+	}
+
+	return result.Result.Username, nil
 }
 
 func (tg *Bot) Send(message string) error {
