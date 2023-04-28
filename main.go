@@ -30,7 +30,7 @@ func main() {
 		},
 		Flags: []cli.Flag{
 			cli.StringFlag{
-				Name:     "token-webmention, wm",
+				Name:     "webmention-token, wm",
 				Usage:    "webmention.io API token",
 				Required: true,
 			},
@@ -40,7 +40,7 @@ func main() {
 				Name:  "fetch",
 				Usage: "fetch webmentions once, print, and exit",
 				Action: func(c *cli.Context) error {
-					b, err := fetch(c.GlobalString("token-webmention"))
+					b, err := fetch(c.GlobalString("webmention-token"))
 					if err != nil {
 						return err
 					}
@@ -60,7 +60,7 @@ func main() {
 				},
 				Flags: []cli.Flag{
 					cli.StringFlag{
-						Name:     "token-telegram, tg",
+						Name:     "telegram-token, tg",
 						Usage:    "Telegram bot API token",
 						Required: true,
 					},
