@@ -61,7 +61,7 @@ func (tg *Bot) do(payload any, method string) ([]byte, error) {
 			log.Println("ERROR", err)
 		}
 
-		return nil, fmt.Errorf("failed to send message: %s: %s", resp.Status, string(b))
+		return nil, fmt.Errorf("Telegram bot API request failed: %s: %s", resp.Status, string(b))
 	}
 
 	return io.ReadAll(resp.Body)
