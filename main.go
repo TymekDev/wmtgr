@@ -163,39 +163,5 @@ func fetch(token string, sinceID int) ([]byte, error) {
 }
 
 func sendTelegramMessage(token string, chat_id, message string) error {
-	payload := struct {
-		ChatID  string `json:"chat_id"`
-		Message string `json:"text"`
-	}{
-		ChatID:  chat_id,
-		Message: message,
-	}
-
-	b, err := json.Marshal(payload)
-	if err != nil {
-		return err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", token), bytes.NewReader(b))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		b, err := io.ReadAll(resp.Body)
-		if err != nil {
-			log.Println("ERROR", err)
-		}
-
-		return fmt.Errorf("failed to send message: %s: %s", resp.Status, string(b))
-	}
-
-	return nil
+	return NewBot(token, chat_id).Send(message)
 }
