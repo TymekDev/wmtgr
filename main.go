@@ -16,10 +16,13 @@ import (
 	"github.com/urfave/cli"
 )
 
+var version string
+
 func main() {
 	app := &cli.App{
 		Name:        "wmtgr",
 		Usage:       "webmentions to telegram relay",
+		Version:     version,
 		Description: "wmtgr periodically checks webmention.io for new webmentions and sends them to Telegram using Telegram bot API.",
 		Authors: []cli.Author{
 			{
