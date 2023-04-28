@@ -7,16 +7,14 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/urfave/cli"
 )
-
-// TODO: request webmetions from URL at the start
-// TODO: check every N minutes
-// TODO: send telegram notification
 
 func main() {
 	app := &cli.App{
@@ -41,7 +39,7 @@ func main() {
 				Name:  "fetch",
 				Usage: "fetch webmentions once, print, and exit",
 				Action: func(c *cli.Context) error {
-					b, err := fetch(c.GlobalString("webmention-token"))
+					b, err := fetch(c.GlobalString("webmention-token"), 0)
 					if err != nil {
 						return err
 					}
@@ -57,37 +55,25 @@ func main() {
 				Name:  "relay",
 				Usage: "fetch webmentions periodically and relay them to Telegram",
 				Action: func(c *cli.Context) error {
-					b, err := fetch(c.GlobalString("webmention-token"))
+					_, sinceID, err := fetchAndParse(c.GlobalString("webmention-token"), 0)
 					if err != nil {
 						return err
 					}
 
-					result := &struct {
-						Links []any `json:"links"`
-					}{}
-
-					if err := json.Unmarshal(b, result); err != nil {
-						return err
-					}
-
-					log.Println("INFO starting relay, found", len(result.Links), "webmention(s)")
+					log.Println("INFO starting relay")
 					for range time.Tick(c.Duration("interval")) {
-						nLast := len(result.Links)
-
-						b, err := fetch(c.GlobalString("webmention-token"))
+						sentences, id, err := fetchAndParse(c.GlobalString("webmention-token"), sinceID)
 						if err != nil {
 							log.Println("ERROR", err)
 							continue
 						}
+						sinceID = id
 
-						if err := json.Unmarshal(b, result); err != nil {
-							log.Println("ERROR", err)
-							continue
-						}
-
-						if n := len(result.Links) - nLast; n > 0 {
+						if n := len(sentences); n > 0 {
 							log.Println("INFO found", n, "new webmention(s)")
-							if err := sendTelegramMessage(c.String("telegram-token"), c.String("telegram-chat-id"), fmt.Sprintf("Found %d new webmention(s)", n)); err != nil {
+							const sep = "\n - "
+							message := fmt.Sprintf("Found %d new webmention(s):%s%s", n, sep, strings.Join(sentences, sep))
+							if err := sendTelegramMessage(c.String("telegram-token"), c.String("telegram-chat-id"), message); err != nil {
 								log.Println("ERROR", err)
 								continue
 							}
@@ -123,8 +109,45 @@ func main() {
 	}
 }
 
-func fetch(token string) ([]byte, error) {
-	req, err := http.NewRequest(http.MethodGet, "https://webmention.io/api/mentions", strings.NewReader(fmt.Sprintf("token=%s", token)))
+type Response struct {
+	Links []struct {
+		ID       int `json:"id"`
+		Activity struct {
+			Sentence string `json:"sentence"`
+		} `json:"activity"`
+	} `json:"links"`
+}
+
+func fetchAndParse(token string, sinceID int) ([]string, int, error) {
+	b, err := fetch(token, sinceID)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	var resp Response
+	if err := json.Unmarshal(b, &resp); err != nil {
+		return nil, 0, err
+	}
+
+	id := sinceID
+	var sentences []string
+	for _, link := range resp.Links {
+		if link.ID > id {
+			id = link.ID
+		}
+		sentences = append(sentences, link.Activity.Sentence)
+	}
+
+	return sentences, id, nil
+}
+
+func fetch(token string, sinceID int) ([]byte, error) {
+	uv := url.Values{
+		"token":    []string{token},
+		"since_id": []string{strconv.Itoa(sinceID)},
+	}
+
+	req, err := http.NewRequest(http.MethodGet, "https://webmention.io/api/mentions", strings.NewReader(uv.Encode()))
 	if err != nil {
 		return nil, err
 	}
