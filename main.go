@@ -2,9 +2,10 @@ package main
 
 import (
 	"bytes"
-	"errors"
+	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -56,7 +57,40 @@ func main() {
 				Name:  "relay",
 				Usage: "fetch webmentions periodically and relay them to Telegram",
 				Action: func(c *cli.Context) error {
-					return errors.New("not implemented")
+					b, err := fetch(c.GlobalString("webmention-token"))
+					if err != nil {
+						return err
+					}
+
+					result := &struct {
+						Links []any `json:"links"`
+					}{}
+
+					if err := json.Unmarshal(b, result); err != nil {
+						return err
+					}
+
+					log.Println("INFO starting relay, found", len(result.Links), "webmention(s)")
+					for range time.Tick(c.Duration("interval")) {
+						nLast := len(result.Links)
+
+						b, err := fetch(c.GlobalString("webmention-token"))
+						if err != nil {
+							log.Println("ERROR", err)
+							continue
+						}
+
+						if err := json.Unmarshal(b, result); err != nil {
+							log.Println("ERROR", err)
+							continue
+						}
+
+						if n := nLast - len(result.Links); n > 0 {
+							log.Println("INFO found", n, "new webmention(s)")
+						}
+					}
+
+					return nil
 				},
 				Flags: []cli.Flag{
 					cli.StringFlag{
