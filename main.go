@@ -33,7 +33,6 @@ func main() {
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "webmention-token",
-				Aliases:  []string{"wm"},
 				Usage:    "webmention.io API token",
 				Required: true,
 			},
@@ -94,13 +93,11 @@ func main() {
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:     "telegram-token",
-						Aliases:  []string{"tg"},
 						Usage:    "Telegram bot API token",
 						Required: true,
 					},
 					&cli.StringFlag{
 						Name:     "telegram-chat-id",
-						Aliases:  []string{"cid"},
 						Usage:    "Telegram chat ID",
 						Required: true,
 					},
@@ -109,6 +106,25 @@ func main() {
 						Aliases: []string{"n"},
 						Usage:   "interval between checks",
 						Value:   60 * time.Minute,
+					},
+				},
+			},
+			{
+				Name:   "completion",
+				Hidden: true,
+				Subcommands: []*cli.Command{
+					{
+						Name: "fish",
+						Action: func(c *cli.Context) error {
+							completion, err := c.App.ToFishCompletion()
+							if err != nil {
+								return err
+							}
+
+							fmt.Println(completion)
+
+							return nil
+						},
 					},
 				},
 			},
