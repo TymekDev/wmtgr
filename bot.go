@@ -69,7 +69,7 @@ func (tg *Bot) do(payload any, method string) ([]byte, error) {
 		return nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, tg.url("sendMessage"), bytes.NewReader(b))
+	req, err := http.NewRequest(http.MethodPost, tg.url(method), bytes.NewReader(b))
 	if err != nil {
 		return nil, err
 	}
