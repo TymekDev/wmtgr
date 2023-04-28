@@ -30,24 +30,28 @@ func (tg *Bot) Send(message string) error {
 		Message: message,
 	}
 
-	return tg.do(payload, "sendMessage")
+	if _, err := tg.do(payload, "sendMessage"); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (tg *Bot) do(payload any, method string) error {
+func (tg *Bot) do(payload any, method string) ([]byte, error) {
 	b, err := json.Marshal(payload)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	req, err := http.NewRequest(http.MethodPost, tg.url("sendMessage"), bytes.NewReader(b))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer resp.Body.Close()
 
@@ -57,10 +61,10 @@ func (tg *Bot) do(payload any, method string) error {
 			log.Println("ERROR", err)
 		}
 
-		return fmt.Errorf("failed to send message: %s: %s", resp.Status, string(b))
+		return nil, fmt.Errorf("failed to send message: %s: %s", resp.Status, string(b))
 	}
 
-	return nil
+	return io.ReadAll(resp.Body)
 }
 
 func (b *Bot) url(method string) string {
