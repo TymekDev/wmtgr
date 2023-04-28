@@ -137,23 +137,21 @@ func main() {
 	}
 }
 
-type Response struct {
-	Links []struct {
-		ID       int `json:"id"`
-		Activity struct {
-			Sentence string `json:"sentence"`
-		} `json:"activity"`
-	} `json:"links"`
-}
-
 func fetchAndParse(token string, sinceID int) ([]string, int, error) {
 	b, err := fetch(token, sinceID)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	var resp Response
-	if err := json.Unmarshal(b, &resp); err != nil {
+	resp := &struct {
+		Links []struct {
+			ID       int `json:"id"`
+			Activity struct {
+				Sentence string `json:"sentence"`
+			} `json:"activity"`
+		} `json:"links"`
+	}{}
+	if err := json.Unmarshal(b, resp); err != nil {
 		return nil, 0, err
 	}
 

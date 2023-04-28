@@ -35,7 +35,7 @@ func (tg *Bot) Name() (string, error) {
 		return "", err
 	}
 
-	result := struct {
+	result := &struct {
 		Result struct {
 			Username string `json:"username"`
 		} `json:"result"`
@@ -48,7 +48,7 @@ func (tg *Bot) Name() (string, error) {
 }
 
 func (tg *Bot) Send(message string) error {
-	payload := struct {
+	payload := &struct {
 		ChatID  string `json:"chat_id"`
 		Message string `json:"text"`
 	}{
