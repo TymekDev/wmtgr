@@ -1,4 +1,4 @@
-module git.sr.ht/~tymek/wmtgr
+module github.com/TymekDev/wmtgr
 
 go 1.20
 
